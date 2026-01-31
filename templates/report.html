@@ -119,34 +119,15 @@
                 </div>
             </div>
             
-            <!-- Feature Importance & Confusion Matrix -->
+            <!-- Feature Importance -->
             <div class="row mb-4">
-                <div class="col-md-6">
+                <div class="col-12">
                     <div class="card shadow-sm h-100">
                         <div class="card-header">
-                            <i class="bi bi-stars me-2"></i>Feature Importance
+                            <i class="bi bi-stars me-2"></i>Top 15 Features Importance
                         </div>
                         <div class="card-body">
                             <div id="featureImportanceChart" style="height: 450px;"></div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="card shadow-sm h-100">
-                        <div class="card-header">
-                            <i class="bi bi-grid-3x3 me-2"></i>Confusion Matrix
-                        </div>
-                        <div class="card-body">
-                            <div id="confusionMatrixChart" style="height: 350px;"></div>
-                            <div class="mt-3">
-                                <h6>Interpretation</h6>
-                                <ul class="small text-muted">
-                                    <li><strong>True Negatives (TN):</strong> Genuine accounts correctly identified</li>
-                                    <li><strong>True Positives (TP):</strong> Fake accounts correctly detected</li>
-                                    <li><strong>False Positives (FP):</strong> Genuine accounts incorrectly flagged</li>
-                                    <li><strong>False Negatives (FN):</strong> Fake accounts missed</li>
-                                </ul>
-                            </div>
                         </div>
                     </div>
                 </div>
@@ -448,11 +429,6 @@
                 if (data.charts.feature_importance) {
                     const fiChart = JSON.parse(data.charts.feature_importance);
                     Plotly.newPlot('featureImportanceChart', fiChart.data, fiChart.layout, {responsive: true});
-                }
-                
-                if (data.charts.confusion_matrix) {
-                    const cmChart = JSON.parse(data.charts.confusion_matrix);
-                    Plotly.newPlot('confusionMatrixChart', cmChart.data, cmChart.layout, {responsive: true});
                 }
             }
         }

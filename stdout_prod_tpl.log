@@ -1,0 +1,6 @@
+Model loaded from models/fake_detector_model.pkl
+Current working directory: C:\Users\HP\OneDrive\Desktop\fake account\fake-account-detection-dashboard
+Template folder: C:\Users\HP\OneDrive\Desktop\fake account\fake-account-detection-dashboard\templates
+Static folder: C:\Users\HP\OneDrive\Desktop\fake account\fake-account-detection-dashboard\static
+ * Serving Flask app 'app'
+ * Debug mode: off

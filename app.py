@@ -22,7 +22,10 @@ from utils import (
     generate_metrics_comparison_chart, export_report_csv
 )
 
-app = Flask(__name__)
+# Determine absolute paths
+template_dir = os.path.abspath('templates')
+static_dir = os.path.abspath('static')
+app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)
 CORS(app)
 
 # Initialize detector
@@ -41,6 +44,7 @@ if not detector.load_model():
 def index():
     """Main dashboard page."""
     return render_template('index.html')
+    # return "Hello World - Server is running!"
 
 
 @app.route('/analysis')
@@ -373,4 +377,7 @@ if __name__ == '__main__':
     os.makedirs('models', exist_ok=True)
     
     # Run the app
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    print(f"Current working directory: {os.getcwd()}")
+    print(f"Template folder: {app.template_folder}")
+    print(f"Static folder: {app.static_folder}")
+    app.run(debug=False, host='0.0.0.0', port=5000)
