@@ -1,0 +1,4 @@
+﻿username,followers_count,following_count,posts_count,account_age_days,has_profile_pic,bio
+john_doe,1500,800,120,365,true,Tech enthusiast
+suspicious_user123,50,3000,5,10,false,
+jane_smith,25000,500,450,730,true,Travel blogger

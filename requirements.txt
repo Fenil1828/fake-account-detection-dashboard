@@ -1,0 +1,25 @@
+# Fake Account Detection Dashboard - Requirements
+# Web Framework
+Flask>=3.0.0
+Flask-CORS>=4.0.0
+
+# Machine Learning (use pre-built wheels)
+scikit-learn>=1.3.0
+numpy>=1.24.0
+pandas>=2.0.0
+joblib>=1.3.0
+
+# Visualization
+plotly>=5.18.0
+networkx>=3.0
+matplotlib>=3.7.0
+
+# Data Processing
+python-dateutil>=2.8.0
+
+# Report Generation
+reportlab>=4.0.0
+fpdf2>=2.7.0
+
+# Utilities
+werkzeug>=3.0.0
