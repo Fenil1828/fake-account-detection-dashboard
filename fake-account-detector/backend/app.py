@@ -16,8 +16,10 @@ from feature_extraction import FeatureExtractor
 app = Flask(__name__)
 CORS(app)
 
-# Load model
-MODEL_PATH = 'models/detector.pkl'
+# Get the backend directory
+BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(BACKEND_DIR)
+MODEL_PATH = os.path.join(PROJECT_ROOT, 'models', 'detector.pkl')
 detector = None
 
 def load_detector():
@@ -26,13 +28,13 @@ def load_detector():
     if os.path.exists(MODEL_PATH):
         try:
             detector = joblib.load(MODEL_PATH)
-            print(f"✓ Model loaded from {MODEL_PATH}")
+            print(f"Model loaded from {MODEL_PATH}")
             return True
         except Exception as e:
-            print(f"❌ Error loading model: {e}")
+            print(f"Error loading model: {e}")
             return False
     else:
-        print(f"⚠️  Model not found at {MODEL_PATH}")
+        print(f"Model not found at {MODEL_PATH}")
         print("   Please train the model first: python backend/model_training.py")
         return False
 
