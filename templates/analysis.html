@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Single Account Analysis - Fake Account Detector</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="/static/css/style.css" rel="stylesheet">
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="bi bi-shield-check me-2"></i>
+                Fake Account Detector
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/"><i class="bi bi-house-door me-1"></i> Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/analysis"><i class="bi bi-search me-1"></i> Single Analysis</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/batch"><i class="bi bi-file-earmark-spreadsheet me-1"></i> Batch Analysis</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/report"><i class="bi bi-bar-chart-line me-1"></i> Model Report</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-5">
+        <div class="row">
+            <!-- Input Form -->
+            <div class="col-lg-4">
+                <div class="card shadow-sm sticky-form">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0"><i class="bi bi-person-lines-fill me-2"></i>Account Details</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="analysisForm">
+                            <!-- Basic Info -->
+                            <h6 class="text-primary mb-3"><i class="bi bi-person-fill me-1"></i>Basic Information</h6>
+                            
+                            <div class="mb-3">
+                                <label class="form-label small fw-medium">Username <span class="text-danger">*</span></label>
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">@</span>
+                                    <input type="text" class="form-control" name="username" placeholder="username" required>
+                                </div>
+                            </div>
+                            
+                            <div class="row g-2 mb-3">
+                                <div class="col-6">
+                                    <label class="form-label small fw-medium">Followers <span class="text-danger">*</span></label>
+                                    <input type="number" class="form-control form-control-sm" name="followers_count" min="0" placeholder="1000" required>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small fw-medium">Following <span class="text-danger">*</span></label>
+                                    <input type="number" class="form-control form-control-sm" name="following_count" min="0" placeholder="500" required>
+                                </div>
+                            </div>
+                            
+                            <div class="row g-2 mb-3">
+                                <div class="col-6">
+                                    <label class="form-label small fw-medium">Posts</label>
+                                    <input type="number" class="form-control form-control-sm" name="posts_count" min="0" value="0" placeholder="100">
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small fw-medium">Account Age (days)</label>
+                                    <input type="number" class="form-control form-control-sm" name="account_age_days" min="1" value="30" placeholder="365">
+                                </div>
+                            </div>
+                            
+                            <hr class="my-3">
+                            
+                            <!-- Profile Info -->
+                            <h6 class="text-primary mb-3"><i class="bi bi-person-badge me-1"></i>Profile</h6>
+                            
+                            <div class="row g-2 mb-3">
+                                <div class="col-6">
+                                    <label class="form-label small fw-medium">Profile Pic</label>
+                                    <select class="form-select form-select-sm" name="has_profile_pic">
+                                        <option value="true">Yes</option>
+                                        <option value="false">No</option>
+                                    </select>
+                                </div>
+                                <div class="col-6">
+                                    <label class="form-label small fw-medium">Verified</label>
+                                    <select class="form-select form-select-sm" name="is_verified">
+                                        <option value="false">No</option>
+                                        <option value="true">Yes</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label small fw-medium">Bio</label>
+                                <textarea class="form-control form-control-sm" name="bio" rows="2" placeholder="Account bio/description..."></textarea>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label small fw-medium">External URL</label>
+                                <input type="url" class="form-control form-control-sm" name="external_url" placeholder="https://...">
+                            </div>
+                            
+                            <!-- Advanced Options (Collapsible) -->
+                            <div class="mb-3">
+                                <a class="btn btn-sm btn-outline-secondary w-100" data-bs-toggle="collapse" href="#advancedOptions">
+                                    <i class="bi bi-sliders me-1"></i>Advanced Options
+                                </a>
+                            </div>
+                            
+                            <div class="collapse" id="advancedOptions">
+                                <div class="border rounded p-3 bg-light">
+                                    <!-- Engagement -->
+                                    <h6 class="small text-muted mb-2">Engagement</h6>
+                                    <div class="row g-2 mb-3">
+                                        <div class="col-6">
+                                            <label class="form-label small">Avg Likes</label>
+                                            <input type="number" class="form-control form-control-sm" name="avg_likes_per_post" min="0" value="0">
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label small">Avg Comments</label>
+                                            <input type="number" class="form-control form-control-sm" name="avg_comments_per_post" min="0" value="0">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label small">Avg Caption Length</label>
+                                        <input type="number" class="form-control form-control-sm" name="avg_caption_length" min="0" value="50">
+                                    </div>
+                                    
+                                    <!-- Behavior -->
+                                    <h6 class="small text-muted mb-2 mt-3">Behavior</h6>
+                                    <div class="mb-2">
+                                        <label class="form-label small d-flex justify-content-between">
+                                            <span>Posting Regularity</span>
+                                            <span class="text-muted" id="regVal">0.5</span>
+                                        </label>
+                                        <input type="range" class="form-range" name="posting_regularity" min="0" max="1" step="0.1" value="0.5" oninput="document.getElementById('regVal').textContent=this.value">
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <label class="form-label small d-flex justify-content-between">
+                                            <span>Burst Posting</span>
+                                            <span class="text-muted" id="burstVal">0.2</span>
+                                        </label>
+                                        <input type="range" class="form-range" name="burst_posting_score" min="0" max="1" step="0.1" value="0.2" oninput="document.getElementById('burstVal').textContent=this.value">
+                                    </div>
+                                    
+                                    <div class="row g-2 mb-3">
+                                        <div class="col-6">
+                                            <label class="form-label small">Session (min)</label>
+                                            <input type="number" class="form-control form-control-sm" name="session_duration_avg" min="0" value="30">
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label small">Logins/Day</label>
+                                            <input type="number" class="form-control form-control-sm" name="login_frequency" min="0" step="0.1" value="1">
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- Content -->
+                                    <h6 class="small text-muted mb-2 mt-3">Content</h6>
+                                    <div class="row g-2 mb-3">
+                                        <div class="col-6">
+                                            <label class="form-label small">Hashtag Density</label>
+                                            <input type="number" class="form-control form-control-sm" name="hashtag_density" min="0" max="1" step="0.1" value="0.1">
+                                        </div>
+                                        <div class="col-6">
+                                            <label class="form-label small">Spam Words</label>
+                                            <input type="number" class="form-control form-control-sm" name="spam_word_count" min="0" value="0">
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="mb-2">
+                                        <label class="form-label small d-flex justify-content-between">
+                                            <span>Duplicate Content</span>
+                                            <span class="text-muted" id="dupVal">0</span>
+                                        </label>
+                                        <input type="range" class="form-range" name="duplicate_content_ratio" min="0" max="1" step="0.1" value="0" oninput="document.getElementById('dupVal').textContent=this.value">
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <!-- Buttons in card footer - always visible -->
+                    <div class="card-footer bg-white border-top">
+                        <div class="d-grid gap-2">
+                            <button type="submit" form="analysisForm" class="btn btn-primary btn-lg">
+                                <i class="bi bi-cpu me-2"></i>Analyze Account
+                            </button>
+                            <div class="d-flex gap-2">
+                                <button type="button" class="btn btn-outline-secondary flex-grow-1" onclick="loadRandomSample()">
+                                    <i class="bi bi-shuffle me-1"></i>Load Sample
+                                </button>
+                                <button type="reset" form="analysisForm" class="btn btn-outline-danger flex-grow-1">
+                                    <i class="bi bi-x-lg me-1"></i>Clear
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Results Panel -->
+            <div class="col-lg-8">
+                <div id="loadingState" style="display: none;" class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-3 text-muted">Analyzing account...</p>
+                </div>
+                
+                <div id="emptyState" class="text-center py-5">
+                    <i class="bi bi-search display-1 text-muted"></i>
+                    <h3 class="mt-3 text-muted">Enter Account Details</h3>
+                    <p class="text-muted">Fill in the form and click "Analyze Account" to get risk assessment.</p>
+                </div>
+                
+                <div id="resultsContainer" style="display: none;">
+                    <!-- Risk Overview -->
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-body">
+                            <div class="row align-items-center">
+                                <div class="col-md-4 text-center">
+                                    <div id="riskGauge" class="risk-gauge">
+                                        <div class="risk-score" id="riskScoreDisplay">0%</div>
+                                        <div class="risk-label" id="riskLevelDisplay">Risk Level</div>
+                                    </div>
+                                </div>
+                                <div class="col-md-8">
+                                    <h4>
+                                        <span id="usernameDisplay">@username</span>
+                                        <span class="badge ms-2" id="classificationDisplay">Classification</span>
+                                    </h4>
+                                    <p class="lead mb-2" id="summaryDisplay">Analysis summary will appear here.</p>
+                                    <div class="row text-center mt-3">
+                                        <div class="col">
+                                            <div class="metric-box">
+                                                <h5 class="mb-0" id="confidenceDisplay">0%</h5>
+                                                <small class="text-muted">Confidence</small>
+                                            </div>
+                                        </div>
+                                        <div class="col">
+                                            <div class="metric-box">
+                                                <h5 class="mb-0" id="suspiciousCountDisplay">0</h5>
+                                                <small class="text-muted">Suspicious Factors</small>
+                                            </div>
+                                        </div>
+                                        <div class="col">
+                                            <div class="metric-box">
+                                                <h5 class="mb-0" id="positiveCountDisplay">0</h5>
+                                                <small class="text-muted">Positive Factors</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Explanation Cards -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card shadow-sm h-100 border-danger">
+                                <div class="card-header bg-danger text-white">
+                                    <i class="bi bi-exclamation-triangle me-2"></i>Suspicious Factors
+                                </div>
+                                <div class="card-body">
+                                    <ul id="suspiciousFactorsList" class="list-unstyled mb-0"></ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card shadow-sm h-100 border-success">
+                                <div class="card-header bg-success text-white">
+                                    <i class="bi bi-check-circle me-2"></i>Positive Factors
+                                </div>
+                                <div class="card-body">
+                                    <ul id="positiveFactorsList" class="list-unstyled mb-0"></ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Visualizations -->
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-header">
+                            <ul class="nav nav-tabs card-header-tabs" role="tablist">
+                                <li class="nav-item">
+                                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#engagementTab">
+                                        <i class="bi bi-bar-chart me-1"></i>Engagement
+                                    </button>
+                                </li>
+                                <li class="nav-item">
+                                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#followersTab">
+                                        <i class="bi bi-people me-1"></i>Followers
+                                    </button>
+                                </li>
+                                <li class="nav-item">
+                                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#timelineTab">
+                                        <i class="bi bi-calendar-range me-1"></i>Timeline
+                                    </button>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="card-body">
+                            <div class="tab-content">
+                                <div class="tab-pane fade show active" id="engagementTab">
+                                    <div id="engagementChart" style="height: 350px;"></div>
+                                </div>
+                                <div class="tab-pane fade" id="followersTab">
+                                    <div id="followersChart" style="height: 350px;"></div>
+                                </div>
+                                <div class="tab-pane fade" id="timelineTab">
+                                    <div id="timelineChart" style="height: 500px;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Account Data Summary -->
+                    <div class="card shadow-sm">
+                        <div class="card-header">
+                            <i class="bi bi-table me-2"></i>Account Data Summary
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-sm" id="accountDataTable">
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-4 mt-5">
+        <div class="container text-center">
+            <p class="mb-0">
+                <i class="bi bi-shield-check me-2"></i>
+                Fake Account Detection Dashboard &copy; 2025
+            </p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/main.js"></script>
+    <script>
+        let sampleAccounts = [];
+        
+        // Load samples on page load
+        document.addEventListener('DOMContentLoaded', async function() {
+            try {
+                const response = await fetch('/api/sample-accounts');
+                const data = await response.json();
+                if (data.success) {
+                    sampleAccounts = data.samples;
+                }
+            } catch (error) {
+                console.error('Error loading samples:', error);
+            }
+        });
+        
+        function loadRandomSample() {
+            if (sampleAccounts.length > 0) {
+                const sample = sampleAccounts[Math.floor(Math.random() * sampleAccounts.length)];
+                fillForm(sample);
+            }
+        }
+        
+        function fillForm(data) {
+            document.querySelector('input[name="username"]').value = data.username || '';
+            document.querySelector('input[name="followers_count"]').value = data.followers_count || 0;
+            document.querySelector('input[name="following_count"]').value = data.following_count || 0;
+            document.querySelector('input[name="posts_count"]').value = data.posts_count || 0;
+            document.querySelector('input[name="account_age_days"]').value = data.account_age_days || 30;
+            document.querySelector('select[name="has_profile_pic"]').value = data.has_profile_pic ? 'true' : 'false';
+            document.querySelector('select[name="is_verified"]').value = data.is_verified ? 'true' : 'false';
+            document.querySelector('textarea[name="bio"]').value = data.bio || '';
+            document.querySelector('input[name="external_url"]').value = data.external_url || '';
+            document.querySelector('input[name="avg_likes_per_post"]').value = data.avg_likes_per_post || 0;
+            document.querySelector('input[name="avg_comments_per_post"]').value = data.avg_comments_per_post || 0;
+            document.querySelector('input[name="avg_caption_length"]').value = data.avg_caption_length || 50;
+            document.querySelector('input[name="posting_regularity"]').value = data.posting_regularity || 0.5;
+            document.querySelector('input[name="burst_posting_score"]').value = data.burst_posting_score || 0.2;
+            document.querySelector('input[name="session_duration_avg"]').value = data.session_duration_avg || 30;
+            document.querySelector('input[name="login_frequency"]').value = data.login_frequency || 1;
+            document.querySelector('input[name="hashtag_density"]').value = data.hashtag_density || 0.1;
+            document.querySelector('input[name="spam_word_count"]').value = data.spam_word_count || 0;
+            document.querySelector('input[name="duplicate_content_ratio"]').value = data.duplicate_content_ratio || 0;
+        }
+        
+        // Form submission
+        document.getElementById('analysisForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            document.getElementById('emptyState').style.display = 'none';
+            document.getElementById('resultsContainer').style.display = 'none';
+            document.getElementById('loadingState').style.display = 'block';
+            
+            const formData = new FormData(this);
+            
+            try {
+                const response = await fetch('/api/analyze', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    displayResults(data.result);
+                } else {
+                    alert('Error: ' + data.error);
+                    document.getElementById('emptyState').style.display = 'block';
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+                document.getElementById('emptyState').style.display = 'block';
+            } finally {
+                document.getElementById('loadingState').style.display = 'none';
+            }
+        });
+        
+        function displayResults(result) {
+            document.getElementById('resultsContainer').style.display = 'block';
+            
+            // Risk score display
+            const riskPercent = Math.round(result.risk_score * 100);
+            document.getElementById('riskScoreDisplay').textContent = riskPercent + '%';
+            document.getElementById('riskLevelDisplay').textContent = result.risk_level + ' Risk';
+            
+            // Update gauge color
+            const gauge = document.getElementById('riskGauge');
+            gauge.className = 'risk-gauge ';
+            if (result.risk_score < 0.4) {
+                gauge.classList.add('risk-low');
+            } else if (result.risk_score < 0.7) {
+                gauge.classList.add('risk-medium');
+            } else {
+                gauge.classList.add('risk-high');
+            }
+            
+            // Username and classification
+            document.getElementById('usernameDisplay').textContent = '@' + result.username;
+            const classBadge = document.getElementById('classificationDisplay');
+            classBadge.textContent = result.classification;
+            classBadge.className = 'badge ms-2 ' + (result.is_fake ? 'bg-danger' : 'bg-success');
+            
+            // Summary
+            document.getElementById('summaryDisplay').textContent = result.explanation.summary;
+            
+            // Metrics
+            document.getElementById('confidenceDisplay').textContent = Math.round(result.confidence * 100) + '%';
+            document.getElementById('suspiciousCountDisplay').textContent = result.suspicious_attributes.length;
+            document.getElementById('positiveCountDisplay').textContent = result.positive_attributes.length;
+            
+            // Suspicious factors
+            const suspiciousList = document.getElementById('suspiciousFactorsList');
+            suspiciousList.innerHTML = '';
+            if (result.suspicious_attributes.length === 0) {
+                suspiciousList.innerHTML = '<li class="text-muted">No suspicious factors detected</li>';
+            } else {
+                result.suspicious_attributes.forEach(factor => {
+                    const li = document.createElement('li');
+                    li.className = 'mb-3';
+                    li.innerHTML = `
+                        <div class="d-flex align-items-start">
+                            <span class="badge bg-${factor.weight === 'high' ? 'danger' : factor.weight === 'medium' ? 'warning' : 'secondary'} me-2">${factor.weight}</span>
+                            <div>
+                                <strong>${factor.factor}</strong>
+                                <br><small class="text-muted">${factor.detail}</small>
+                            </div>
+                        </div>
+                    `;
+                    suspiciousList.appendChild(li);
+                });
+            }
+            
+            // Positive factors
+            const positiveList = document.getElementById('positiveFactorsList');
+            positiveList.innerHTML = '';
+            if (result.positive_attributes.length === 0) {
+                positiveList.innerHTML = '<li class="text-muted">No positive factors detected</li>';
+            } else {
+                result.positive_attributes.forEach(factor => {
+                    const li = document.createElement('li');
+                    li.className = 'mb-3';
+                    li.innerHTML = `
+                        <div class="d-flex align-items-start">
+                            <span class="badge bg-${factor.weight === 'high' ? 'success' : factor.weight === 'medium' ? 'info' : 'secondary'} me-2">${factor.weight}</span>
+                            <div>
+                                <strong>${factor.factor}</strong>
+                                <br><small class="text-muted">${factor.detail}</small>
+                            </div>
+                        </div>
+                    `;
+                    positiveList.appendChild(li);
+                });
+            }
+            
+            // Charts
+            if (result.charts) {
+                if (result.charts.engagement) {
+                    const engagementData = JSON.parse(result.charts.engagement);
+                    Plotly.newPlot('engagementChart', engagementData.data, engagementData.layout, {responsive: true});
+                }
+                if (result.charts.followers) {
+                    const followersData = JSON.parse(result.charts.followers);
+                    Plotly.newPlot('followersChart', followersData.data, followersData.layout, {responsive: true});
+                }
+                if (result.charts.timeline) {
+                    const timelineData = JSON.parse(result.charts.timeline);
+                    Plotly.newPlot('timelineChart', timelineData.data, timelineData.layout, {responsive: true});
+                }
+            }
+            
+            // Account data table
+            const tableBody = document.querySelector('#accountDataTable tbody');
+            tableBody.innerHTML = '';
+            const accountData = result.account_data || {};
+            const displayFields = [
+                ['Username', accountData.username],
+                ['Followers', accountData.followers_count?.toLocaleString()],
+                ['Following', accountData.following_count?.toLocaleString()],
+                ['Posts', accountData.posts_count?.toLocaleString()],
+                ['Account Age', accountData.account_age_days + ' days'],
+                ['Profile Picture', accountData.has_profile_pic ? 'Yes' : 'No'],
+                ['Verified', accountData.is_verified ? 'Yes' : 'No'],
+                ['Engagement Rate', (accountData.engagement_rate || 0).toFixed(2) + '%']
+            ];
+            
+            displayFields.forEach(([label, value]) => {
+                const row = document.createElement('tr');
+                row.innerHTML = `<th scope="row">${label}</th><td>${value || 'N/A'}</td>`;
+                tableBody.appendChild(row);
+            });
+            
+            // Scroll to results
+            document.getElementById('resultsContainer').scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>

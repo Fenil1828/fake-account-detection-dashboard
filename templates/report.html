@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Model Report - Fake Account Detector</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="/static/css/style.css" rel="stylesheet">
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="bi bi-shield-check me-2"></i>
+                Fake Account Detector
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/"><i class="bi bi-house-door me-1"></i> Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/analysis"><i class="bi bi-search me-1"></i> Single Analysis</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/batch"><i class="bi bi-file-earmark-spreadsheet me-1"></i> Batch Analysis</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="/report"><i class="bi bi-bar-chart-line me-1"></i> Model Report</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-5">
+        <h1 class="mb-4"><i class="bi bi-bar-chart-line me-2"></i>Model Performance Report</h1>
+        <p class="lead text-muted mb-5">Detailed analysis of the fake account detection model's performance metrics and capabilities.</p>
+        
+        <div id="loadingState" class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-3 text-muted">Loading model metrics...</p>
+        </div>
+        
+        <div id="reportContent" style="display: none;">
+            <!-- Performance Metrics -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card bg-primary text-white h-100">
+                        <div class="card-body text-center">
+                            <i class="bi bi-bullseye display-4 mb-2"></i>
+                            <h2 class="mb-0" id="accuracyValue">--</h2>
+                            <small>Accuracy</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-success text-white h-100">
+                        <div class="card-body text-center">
+                            <i class="bi bi-check2-circle display-4 mb-2"></i>
+                            <h2 class="mb-0" id="precisionValue">--</h2>
+                            <small>Precision</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-info text-white h-100">
+                        <div class="card-body text-center">
+                            <i class="bi bi-search display-4 mb-2"></i>
+                            <h2 class="mb-0" id="recallValue">--</h2>
+                            <small>Recall</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-warning text-dark h-100">
+                        <div class="card-body text-center">
+                            <i class="bi bi-graph-up display-4 mb-2"></i>
+                            <h2 class="mb-0" id="f1Value">--</h2>
+                            <small>F1-Score</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Cross-Validation -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header">
+                    <i class="bi bi-shuffle me-2"></i>Cross-Validation Results
+                </div>
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <h4>5-Fold Cross-Validation</h4>
+                            <p class="text-muted">The model was evaluated using 5-fold cross-validation to ensure robust performance estimates.</p>
+                            <div class="d-flex align-items-center">
+                                <div class="me-4">
+                                    <h5 class="mb-0" id="cvMean">--</h5>
+                                    <small class="text-muted">Mean Score</small>
+                                </div>
+                                <div>
+                                    <h5 class="mb-0" id="cvStd">--</h5>
+                                    <small class="text-muted">Standard Deviation</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div id="metricsChart" style="height: 300px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Feature Importance & Confusion Matrix -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header">
+                            <i class="bi bi-stars me-2"></i>Feature Importance
+                        </div>
+                        <div class="card-body">
+                            <div id="featureImportanceChart" style="height: 450px;"></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-header">
+                            <i class="bi bi-grid-3x3 me-2"></i>Confusion Matrix
+                        </div>
+                        <div class="card-body">
+                            <div id="confusionMatrixChart" style="height: 350px;"></div>
+                            <div class="mt-3">
+                                <h6>Interpretation</h6>
+                                <ul class="small text-muted">
+                                    <li><strong>True Negatives (TN):</strong> Genuine accounts correctly identified</li>
+                                    <li><strong>True Positives (TP):</strong> Fake accounts correctly detected</li>
+                                    <li><strong>False Positives (FP):</strong> Genuine accounts incorrectly flagged</li>
+                                    <li><strong>False Negatives (FN):</strong> Fake accounts missed</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Dataset Information -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header">
+                    <i class="bi bi-database me-2"></i>Dataset Information
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="text-center p-3 bg-light rounded">
+                                <h3 class="mb-0" id="totalSamples">--</h3>
+                                <small class="text-muted">Total Samples</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center p-3 bg-danger-subtle rounded">
+                                <h3 class="mb-0 text-danger" id="fakeSamples">--</h3>
+                                <small class="text-muted">Fake Account Samples</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center p-3 bg-success-subtle rounded">
+                                <h3 class="mb-0 text-success" id="genuineSamples">--</h3>
+                                <small class="text-muted">Genuine Account Samples</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <h6>Features Used (<span id="featureCount">--</span> total)</h6>
+                    <div id="featureList" class="d-flex flex-wrap gap-2 mt-2"></div>
+                </div>
+            </div>
+            
+            <!-- Model Architecture -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header">
+                    <i class="bi bi-cpu me-2"></i>Model Architecture
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="card border-primary mb-3">
+                                <div class="card-header bg-primary text-white">
+                                    <i class="bi bi-tree me-2"></i>Random Forest
+                                </div>
+                                <div class="card-body">
+                                    <ul class="small mb-0">
+                                        <li>100 estimators</li>
+                                        <li>Max depth: 10</li>
+                                        <li>Min samples split: 5</li>
+                                        <li>Weight: 2x</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card border-success mb-3">
+                                <div class="card-header bg-success text-white">
+                                    <i class="bi bi-layers me-2"></i>Gradient Boosting
+                                </div>
+                                <div class="card-body">
+                                    <ul class="small mb-0">
+                                        <li>100 estimators</li>
+                                        <li>Max depth: 5</li>
+                                        <li>Learning rate: 0.1</li>
+                                        <li>Weight: 2x</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card border-info mb-3">
+                                <div class="card-header bg-info text-white">
+                                    <i class="bi bi-diagram-2 me-2"></i>Logistic Regression
+                                </div>
+                                <div class="card-body">
+                                    <ul class="small mb-0">
+                                        <li>Max iterations: 1000</li>
+                                        <li>Regularization: L2</li>
+                                        <li>C: 1.0</li>
+                                        <li>Weight: 1x</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info mt-3 mb-0">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>Ensemble Method:</strong> Soft Voting Classifier combines predictions from all three models using weighted probabilities for final classification.
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Sample Case Studies -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header">
+                    <i class="bi bi-journal-text me-2"></i>Sample Case Studies
+                </div>
+                <div class="card-body">
+                    <div class="accordion" id="caseStudies">
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#case1">
+                                    <span class="badge bg-success me-2">Genuine</span>
+                                    Case Study 1: Typical Genuine User
+                                </button>
+                            </h2>
+                            <div id="case1" class="accordion-collapse collapse show" data-bs-parent="#caseStudies">
+                                <div class="accordion-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <h6>Profile Characteristics</h6>
+                                            <ul class="small">
+                                                <li>Followers: 1,250 | Following: 890</li>
+                                                <li>Posts: 156 over 730 days</li>
+                                                <li>Has profile picture and bio</li>
+                                                <li>Engagement rate: 7.8%</li>
+                                                <li>Consistent posting pattern</li>
+                                            </ul>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <h6>Detection Result</h6>
+                                            <p><strong>Risk Score:</strong> 0.12 (Very Low)</p>
+                                            <p><strong>Key Factors:</strong> Healthy follower ratio, established account, organic engagement patterns</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#case2">
+                                    <span class="badge bg-danger me-2">Fake</span>
+                                    Case Study 2: Bot Account
+                                </button>
+                            </h2>
+                            <div id="case2" class="accordion-collapse collapse" data-bs-parent="#caseStudies">
+                                <div class="accordion-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <h6>Profile Characteristics</h6>
+                                            <ul class="small">
+                                                <li>Followers: 45 | Following: 2,500</li>
+                                                <li>Posts: 12 over 15 days</li>
+                                                <li>No profile picture, empty bio</li>
+                                                <li>Engagement rate: 0.04%</li>
+                                                <li>Burst posting patterns detected</li>
+                                            </ul>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <h6>Detection Result</h6>
+                                            <p><strong>Risk Score:</strong> 0.94 (Very High)</p>
+                                            <p><strong>Key Factors:</strong> Abnormal follower ratio, no profile picture, high burst activity, spam indicators</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="accordion-item">
+                            <h2 class="accordion-header">
+                                <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#case3">
+                                    <span class="badge bg-warning text-dark me-2">Suspicious</span>
+                                    Case Study 3: Purchased Followers
+                                </button>
+                            </h2>
+                            <div id="case3" class="accordion-collapse collapse" data-bs-parent="#caseStudies">
+                                <div class="accordion-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <h6>Profile Characteristics</h6>
+                                            <ul class="small">
+                                                <li>Followers: 15,000 | Following: 50</li>
+                                                <li>Posts: 45 over 60 days</li>
+                                                <li>Has profile picture</li>
+                                                <li>Engagement rate: 0.13%</li>
+                                                <li>Spam-like bio content</li>
+                                            </ul>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <h6>Detection Result</h6>
+                                            <p><strong>Risk Score:</strong> 0.78 (High)</p>
+                                            <p><strong>Key Factors:</strong> Unusually high follower ratio, very low engagement despite large following, new account with suspicious growth</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Retrain Model -->
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <i class="bi bi-arrow-repeat me-2"></i>Retrain Model
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Regenerate the synthetic dataset and retrain the model with different parameters.</p>
+                    
+                    <form id="retrainForm" class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Number of Samples</label>
+                            <input type="number" class="form-control" name="n_samples" value="3000" min="500" max="10000">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Fake Account Ratio</label>
+                            <input type="number" class="form-control" name="fake_ratio" value="0.4" min="0.1" max="0.9" step="0.1">
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary w-100" id="retrainBtn">
+                                <i class="bi bi-cpu me-2"></i>Retrain Model
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <div id="retrainResult" class="alert alert-success mt-3" style="display: none;">
+                        Model retrained successfully! Refresh the page to see updated metrics.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-4 mt-5">
+        <div class="container text-center">
+            <p class="mb-0">
+                <i class="bi bi-shield-check me-2"></i>
+                Fake Account Detection Dashboard &copy; 2025
+            </p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', loadMetrics);
+        
+        async function loadMetrics() {
+            try {
+                // Load model metrics
+                const metricsResponse = await fetch('/api/model-metrics');
+                const metricsData = await metricsResponse.json();
+                
+                // Load dataset info
+                const datasetResponse = await fetch('/api/dataset-info');
+                const datasetData = await datasetResponse.json();
+                
+                if (metricsData.success) {
+                    displayMetrics(metricsData);
+                }
+                
+                if (datasetData.success) {
+                    displayDatasetInfo(datasetData.dataset_info);
+                }
+                
+                document.getElementById('loadingState').style.display = 'none';
+                document.getElementById('reportContent').style.display = 'block';
+                
+            } catch (error) {
+                console.error('Error loading metrics:', error);
+                document.getElementById('loadingState').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        Error loading model metrics. Please ensure the model has been trained.
+                    </div>
+                `;
+            }
+        }
+        
+        function displayMetrics(data) {
+            const metrics = data.metrics;
+            
+            // Update metric cards
+            document.getElementById('accuracyValue').textContent = (metrics.accuracy * 100).toFixed(1) + '%';
+            document.getElementById('precisionValue').textContent = (metrics.precision * 100).toFixed(1) + '%';
+            document.getElementById('recallValue').textContent = (metrics.recall * 100).toFixed(1) + '%';
+            document.getElementById('f1Value').textContent = (metrics.f1_score * 100).toFixed(1) + '%';
+            
+            // Cross-validation
+            document.getElementById('cvMean').textContent = (metrics.cv_mean * 100).toFixed(2) + '%';
+            document.getElementById('cvStd').textContent = '± ' + (metrics.cv_std * 100).toFixed(2) + '%';
+            
+            // Render charts
+            if (data.charts) {
+                if (data.charts.metrics) {
+                    const metricsChart = JSON.parse(data.charts.metrics);
+                    Plotly.newPlot('metricsChart', metricsChart.data, metricsChart.layout, {responsive: true});
+                }
+                
+                if (data.charts.feature_importance) {
+                    const fiChart = JSON.parse(data.charts.feature_importance);
+                    Plotly.newPlot('featureImportanceChart', fiChart.data, fiChart.layout, {responsive: true});
+                }
+                
+                if (data.charts.confusion_matrix) {
+                    const cmChart = JSON.parse(data.charts.confusion_matrix);
+                    Plotly.newPlot('confusionMatrixChart', cmChart.data, cmChart.layout, {responsive: true});
+                }
+            }
+        }
+        
+        function displayDatasetInfo(info) {
+            document.getElementById('totalSamples').textContent = info.total_samples.toLocaleString();
+            document.getElementById('fakeSamples').textContent = info.fake_samples.toLocaleString();
+            document.getElementById('genuineSamples').textContent = info.genuine_samples.toLocaleString();
+            document.getElementById('featureCount').textContent = info.feature_count;
+            
+            // Feature list
+            const featureList = document.getElementById('featureList');
+            featureList.innerHTML = '';
+            
+            info.features.forEach(feature => {
+                if (feature !== 'label' && feature !== 'username') {
+                    const badge = document.createElement('span');
+                    badge.className = 'badge bg-secondary';
+                    badge.textContent = feature.replace(/_/g, ' ');
+                    featureList.appendChild(badge);
+                }
+            });
+        }
+        
+        // Retrain form
+        document.getElementById('retrainForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const btn = document.getElementById('retrainBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Training...';
+            
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData.entries());
+            data.n_samples = parseInt(data.n_samples);
+            data.fake_ratio = parseFloat(data.fake_ratio);
+            
+            try {
+                const response = await fetch('/api/retrain', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    document.getElementById('retrainResult').style.display = 'block';
+                    setTimeout(() => location.reload(), 2000);
+                } else {
+                    alert('Error: ' + result.error);
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-cpu me-2"></i>Retrain Model';
+            }
+        });
+    </script>
+</body>
+</html>
