@@ -45,15 +45,17 @@ class FeatureExtractor:
         features['has_url'] = int(bool(data.get('url', '')))
         features['is_verified'] = int(data.get('verified', False))
         
-        # Account age
+        # Account age - ensure it's at least 1
         created_at = data.get('created_at')
         if created_at:
             if isinstance(created_at, str):
                 created_at = pd.to_datetime(created_at)
             account_age = (datetime.now() - created_at).days
-            features['account_age_days'] = account_age
+            features['account_age_days'] = max(account_age, 1)
         else:
-            features['account_age_days'] = data.get('account_age_days', 0)
+            account_age = data.get('account_age_days', 0)
+            # If account_age is 0 or missing, assume it's a new account (1 day)
+            features['account_age_days'] = max(int(account_age), 1)
         
         return features
     

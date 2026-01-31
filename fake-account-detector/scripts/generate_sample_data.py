@@ -20,7 +20,7 @@ def generate_sample_dataset(n_samples=5000):
         is_bot = random.random() < 0.4
         
         if is_bot:
-            # Bot account characteristics
+            # 🤖 Bot Pattern: Following >> Followers (aggressive spam)
             account = {
                 'id': f'bot_{i}',
                 'username': f'user{random.randint(1000, 99999)}' if random.random() < 0.7 else f'bot_{i}',
@@ -40,7 +40,7 @@ def generate_sample_dataset(n_samples=5000):
                 'account_type': 'bot'
             }
         else:
-            # Real account characteristics
+            # 👑 Celebrity/👤 Regular Pattern: Followers >> Following or Followers ≈ Following
             account = {
                 'id': f'real_{i}',
                 'username': f'{random.choice(["john", "sarah", "mike", "emma", "alex"])}_{random.choice(["smith", "jones", "brown", "davis"])}',

@@ -5,6 +5,9 @@ import os
 import sys
 from datetime import datetime
 import traceback
+from functools import wraps
+from collections import defaultdict
+import time
 
 # Add backend to path for imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -14,7 +17,48 @@ from model_training import FakeAccountDetector
 from feature_extraction import FeatureExtractor
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/api/*": {"origins": "*"}})
+
+# Rate limiting for security
+rate_limiter = defaultdict(list)
+RATE_LIMIT = 100  # requests per hour
+RATE_WINDOW = 3600  # seconds
+
+def rate_limit(f):
+    """Decorator to enforce rate limiting"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        client_ip = request.remote_addr
+        now = time.time()
+        
+        # Clean old entries
+        rate_limiter[client_ip] = [ts for ts in rate_limiter[client_ip] if now - ts < RATE_WINDOW]
+        
+        # Check limit
+        if len(rate_limiter[client_ip]) >= RATE_LIMIT:
+            return jsonify({
+                'error': 'Rate limit exceeded',
+                'message': f'Maximum {RATE_LIMIT} requests per hour allowed'
+            }), 429
+        
+        # Record this request
+        rate_limiter[client_ip].append(now)
+        return f(*args, **kwargs)
+    
+    return decorated_function
+
+def sanitize_input(data):
+    """Sanitize and validate input data"""
+    if isinstance(data, dict):
+        # Remove potentially harmful characters
+        sanitized = {}
+        for key, value in data.items():
+            if isinstance(value, str):
+                # Basic XSS/SQL injection prevention
+                value = value.replace('<', '').replace('>', '').replace(';', '').replace('--', '')
+            sanitized[key] = value
+        return sanitized
+    return data
 
 # Get the backend directory
 BACKEND_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -78,6 +122,7 @@ def get_metrics():
         return jsonify({'error': 'Training metrics not available'}), 404
 
 @app.route('/api/analyze', methods=['POST'])
+@rate_limit
 def analyze_account():
     """Analyze a single social media account"""
     try:
@@ -87,7 +132,7 @@ def analyze_account():
                 'message': 'Please train the model first: python backend/model_training.py'
             }), 500
         
-        account_data = request.json
+        account_data = sanitize_input(request.json)
         
         if not account_data:
             return jsonify({'error': 'No data provided'}), 400
@@ -137,23 +182,43 @@ def analyze_account():
         }), 500
 
 @app.route('/api/batch', methods=['POST'])
+@rate_limit
 def batch_analyze():
     """Analyze multiple accounts"""
     try:
         if detector is None:
             return jsonify({'error': 'Model not loaded'}), 500
         
-        data = request.json
+        data = sanitize_input(request.json)
         accounts = data.get('accounts', [])
         
         if not accounts:
             return jsonify({'error': 'No accounts provided'}), 400
+        
+        if len(accounts) > 100:
+            return jsonify({
+                'error': 'Too many accounts',
+                'message': 'Maximum 100 accounts per batch'
+            }), 400
         
         results = []
         fake_count = 0
         
         for account in accounts:
             try:
+                account = sanitize_input(account)
+                
+                # Ensure required fields have defaults
+                if 'username' not in account:
+                    continue
+                
+                account.setdefault('followers_count', 0)
+                account.setdefault('friends_count', 0)
+                account.setdefault('statuses_count', 0)
+                account.setdefault('account_age_days', 1)
+                account.setdefault('has_profile_image', False)
+                account.setdefault('verified', False)
+                
                 prediction = detector.predict(account)
                 if prediction['is_fake']:
                     fake_count += 1
@@ -164,6 +229,7 @@ def batch_analyze():
                     'risk_level': prediction['risk_level']
                 })
             except Exception as e:
+                print(f"Error analyzing {account.get('username', 'unknown')}: {e}")
                 results.append({
                     'username': account.get('username', 'unknown'),
                     'error': str(e)
@@ -178,6 +244,7 @@ def batch_analyze():
         })
     
     except Exception as e:
+        print(f"Error in batch_analyze: {e}")
         return jsonify({'error': str(e)}), 500
 
 def analyze_behavior(account_data):

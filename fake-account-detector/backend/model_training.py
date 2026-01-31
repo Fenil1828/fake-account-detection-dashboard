@@ -108,21 +108,82 @@ class FakeAccountDetector:
         prediction = self.model.predict([feature_vector])[0]
         probability = self.model.predict_proba([feature_vector])[0]
         
+        fake_prob = float(probability[1])
+        confidence = float(max(probability))
+        
+        # Apply rule-based detection for known fake patterns
+        rule_based_score = self.apply_rules_for_fake_detection(features)
+        
+        # Combine ML prediction with rule-based score
+        # Weight: 70% ML, 30% rules
+        combined_fake_prob = (fake_prob * 0.7) + (rule_based_score * 0.3)
+        
+        # Use combined score for final prediction
+        is_fake = combined_fake_prob >= 0.5
+        
         return {
-            'is_fake': bool(prediction),
-            'fake_probability': float(probability[1]),
-            'real_probability': float(probability[0]),
-            'confidence': float(max(probability)),
-            'risk_level': self.get_risk_level(probability[1])
+            'is_fake': is_fake,
+            'fake_probability': combined_fake_prob,
+            'real_probability': 1.0 - combined_fake_prob,
+            'confidence': confidence,
+            'risk_level': self.get_risk_level(combined_fake_prob),
+            'ml_score': fake_prob,
+            'rule_score': rule_based_score
         }
+    
+    def apply_rules_for_fake_detection(self, features):
+        """Apply heuristic rules for fake account detection"""
+        score = 0.0
+        
+        # Rule 1: Suspicious follower/following ratio (very high following, low followers)
+        ff_ratio = features.get('follower_following_ratio', 0)
+        following = features.get('following_count', 0)
+        followers = features.get('followers_count', 0)
+        
+        if following > followers * 5:  # Following way more than followers
+            score += 0.35
+        
+        if following > 1000 and followers < 50:  # Bot pattern: many following, few followers
+            score += 0.30
+        
+        # Rule 2: Low followers but high activity
+        if followers < 20 and features.get('statuses_count', 0) > 1000:
+            score += 0.25
+        
+        # Rule 3: Very new account with lots of posts (bot spam)
+        account_age = features.get('account_age_days', 1)
+        tweets_per_day = features.get('tweets_per_day', 0)
+        
+        if account_age < 30 and tweets_per_day > 50:
+            score += 0.30
+        
+        # Rule 4: No profile information
+        if not features.get('has_profile_pic', False) and not features.get('has_bio', False):
+            score += 0.20
+        
+        # Rule 5: Default username pattern
+        if features.get('default_pattern', False):
+            score += 0.20
+        
+        # Rule 6: Extremely high posting frequency (bot indicator)
+        if tweets_per_day > 100:
+            score += 0.25
+        
+        # Rule 7: Low followers, high following (classic bot)
+        if followers < 10 and following > 1000:
+            score += 0.40
+        
+        # Normalize score to 0-1 range
+        return min(score, 1.0)
     
     def get_risk_level(self, fake_prob):
         """Determine risk level based on probability"""
-        if fake_prob >= 0.8:
+        # Adjusted thresholds for combined ML + rules score
+        if fake_prob >= 0.75:
             return 'CRITICAL'
-        elif fake_prob >= 0.6:
+        elif fake_prob >= 0.55:
             return 'HIGH'
-        elif fake_prob >= 0.4:
+        elif fake_prob >= 0.35:
             return 'MEDIUM'
         else:
             return 'LOW'

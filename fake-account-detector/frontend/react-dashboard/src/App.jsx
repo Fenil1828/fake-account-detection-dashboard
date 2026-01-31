@@ -3,9 +3,13 @@ import axios from 'axios'
 import { Shield, Upload, Play, AlertTriangle, CheckCircle, XCircle, Users, FileText, Download, Moon, Sparkles, Cpu, TrendingUp, BarChart3, Search, RefreshCw, Layers, Zap, Brain, Target, Lock, Eye, Activity, ChevronDown, ChevronUp, AlertCircle, ShieldCheck, ShieldAlert, Key, Trash2, Copy, Filter, Loader } from 'lucide-react'
 import { Chart as ChartJS, ArcElement, CategoryScale, LinearScale, BarElement, LineElement, PointElement, Tooltip, Legend } from 'chart.js'
 import { Doughnut, Bar, Line } from 'react-chartjs-2'
+import { SampleGenerator } from './components/SampleGenerator'
+import { ManualEntryPage } from './components/ManualEntryPage'
 import './App.css'
 import './gauge.css'
 import './modal.css'
+import './styles/sample-generator.css'
+import './styles/manual-entry-page.css'
 
 ChartJS.register(ArcElement, CategoryScale, LinearScale, BarElement, LineElement, PointElement, Tooltip, Legend)
 
@@ -95,6 +99,7 @@ function App() {
   const [selectedAccounts, setSelectedAccounts] = useState(new Set())
   const [dragActive, setDragActive] = useState(false)
   const [selectedUserDetail, setSelectedUserDetail] = useState(null)
+  const [showManualEntry, setShowManualEntry] = useState(false)
   const fileInputRef = useRef(null)
 
   useEffect(() => {
@@ -360,6 +365,34 @@ function App() {
     datasets: [{ label: 'Threat Level', data: threatHistory.map(t => t.score), borderColor: '#8b5cf6', backgroundColor: 'rgba(139,92,246,0.2)', fill: true, tension: 0.4 }]
   }
 
+  if (showManualEntry) {
+    return (
+      <ManualEntryPage 
+        onSave={(accounts) => {
+          setAccounts(accounts)
+          setResults([])
+          setSelectedAccounts(new Set())
+          setCsvFile(null)
+          addSecurityEvent('MANUAL_ENTRY', `${accounts.length} account(s) created manually`, 'INFO')
+          setShowManualEntry(false)
+          // Auto-analyze
+          setTimeout(() => analyzeAccounts(accounts), 500)
+        }}
+        onCancel={() => setShowManualEntry(false)}
+        onGenerate={(accounts) => {
+          setAccounts(accounts)
+          setResults([])
+          setSelectedAccounts(new Set())
+          setCsvFile(null)
+          addSecurityEvent('SAMPLE_GENERATED', `${accounts.length} sample account(s) generated`, 'INFO')
+          setShowManualEntry(false)
+          // Auto-analyze
+          setTimeout(() => analyzeAccounts(accounts), 500)
+        }}
+      />
+    )
+  }
+
   return (
     <div className="app-container space-bg">
       <div className="stars-container"><div className="stars"></div><div className="stars2"></div><div className="moon"></div></div>
@@ -597,8 +630,16 @@ function App() {
         <section className="glass-card controls">
           <div className="btns">
             <button onClick={() => { setAccounts(SAMPLE); setResults([]); setSelectedAccounts(new Set()); setCsvFile(null); addSecurityEvent('SAMPLE_LOADED', '5 sample accounts loaded', 'INFO') }}><FileText size={16} /> Sample</button>
-            <button onClick={() => { genAccounts(50); setCsvFile(null) }}><Sparkles size={16} /> Gen 50</button>
-            <button onClick={() => { genAccounts(100); setCsvFile(null) }}><Zap size={16} /> Gen 100</button>
+            <SampleGenerator 
+              onGenerate={(accounts) => {
+                setAccounts(accounts)
+                setResults([])
+                setSelectedAccounts(new Set())
+                setCsvFile(null)
+                addSecurityEvent('GENERATOR_USED', `${accounts.length} account(s) generated`, 'INFO')
+              }}
+              onManualEntry={() => setShowManualEntry(true)}
+            />
             <input ref={fileInputRef} type="file" accept=".csv" hidden onChange={handleCSVUpload} />
           </div>
           
