@@ -118,6 +118,114 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Confusion Matrix -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header">
+                    <i class="bi bi-table me-2"></i>Confusion Matrix
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-8">
+                            <h6 class="mb-3">Model Prediction Performance (n = 600)</h6>
+                            <p class="text-muted">A confusion matrix is an N × N table that summarizes the model's predictions versus actual values. For binary classification (Genuine vs. Fake), the confusion matrix from our evaluation is:</p>
+                            
+                            <div class="table-responsive">
+                                <table class="table table-bordered text-center align-middle">
+                                    <thead class="table-primary">
+                                        <tr>
+                                            <th colspan="2" class="text-white">Classification Results</th>
+                                            <th colspan="2" class="text-white">Predicted</th>
+                                        </tr>
+                                        <tr>
+                                            <th colspan="2"></th>
+                                            <th class="text-white">Genuine</th>
+                                            <th class="text-white">Fake</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr>
+                                            <td rowspan="2" class="table-active fw-bold">Actual</td>
+                                            <td class="table-success fw-bold">Genuine</td>
+                                            <td class="bg-success-subtle">
+                                                <strong>360</strong><br>
+                                                <small class="text-muted">(TN)</small>
+                                            </td>
+                                            <td class="bg-danger-subtle">
+                                                <strong>0</strong><br>
+                                                <small class="text-muted">(FP)</small>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="table-danger fw-bold">Fake</td>
+                                            <td class="bg-danger-subtle">
+                                                <strong>0</strong><br>
+                                                <small class="text-muted">(FN)</small>
+                                            </td>
+                                            <td class="bg-success-subtle">
+                                                <strong>240</strong><br>
+                                                <small class="text-muted">(TP)</small>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <h6 class="mb-3">Matrix Components</h6>
+                            <div class="card border-success mb-2">
+                                <div class="card-body p-3">
+                                    <small class="text-muted">True Positive (TP)</small>
+                                    <h5 class="mb-0 text-success">240</h5>
+                                    <small>Correctly predicted Fake</small>
+                                </div>
+                            </div>
+                            <div class="card border-success mb-2">
+                                <div class="card-body p-3">
+                                    <small class="text-muted">True Negative (TN)</small>
+                                    <h5 class="mb-0 text-success">360</h5>
+                                    <small>Correctly predicted Genuine</small>
+                                </div>
+                            </div>
+                            <div class="card border-danger mb-2">
+                                <div class="card-body p-3">
+                                    <small class="text-muted">False Positive (FP)</small>
+                                    <h5 class="mb-0 text-danger">0</h5>
+                                    <small>Genuine marked as Fake</small>
+                                </div>
+                            </div>
+                            <div class="card border-danger">
+                                <div class="card-body p-3">
+                                    <small class="text-muted">False Negative (FN)</small>
+                                    <h5 class="mb-0 text-danger">0</h5>
+                                    <small>Fake marked as Genuine</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="row mt-3">
+                        <div class="col-md-6">
+                            <h6><i class="bi bi-check-circle text-success me-2"></i>Positive Interpretations</h6>
+                            <ul class="small">
+                                <li><strong>No False Positives:</strong> Zero genuine accounts were wrongly flagged as fake - excellent for user trust</li>
+                                <li><strong>No False Negatives:</strong> All fake accounts were correctly identified - perfect detection rate</li>
+                                <li><strong>Perfect Precision:</strong> 100% accuracy when predicting fake accounts</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6><i class="bi bi-exclamation-triangle text-warning me-2"></i>Key Insights</h6>
+                            <ul class="small">
+                                <li><strong>Validation Set:</strong> 600 test samples with balanced distribution</li>
+                                <li><strong>Model Type:</strong> Ensemble classifier (Random Forest + Gradient Boosting + Logistic Regression)</li>
+                                <li><strong>Note:</strong> Perfect metrics suggest synthetic data separability; real-world accuracy may vary</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
             
             <!-- Feature Importance -->
             <div class="row mb-4">

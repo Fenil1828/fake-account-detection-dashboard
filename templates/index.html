@@ -76,46 +76,123 @@
                 <div class="col-lg-8">
                     <div class="card shadow-lg">
                         <div class="card-body p-4">
-                            <form id="quickAnalysisForm">
-                                <div class="row g-3">
-                                    <div class="col-md-6">
+                            <form id="quickAnalysisForm" novalidate>
+                                <div class="row g-4">
+                                    <!-- Basic Information Row -->
+                                    <div class="col-lg-6">
                                         <label class="form-label">Username</label>
                                         <input type="text" class="form-control" name="username" placeholder="@username" required>
+                                        <small class="text-muted">e.g., @john_doe</small>
                                     </div>
-                                    <div class="col-md-3">
+                                    <div class="col-lg-6">
+                                        <label class="form-label">Bio</label>
+                                        <input type="text" class="form-control" name="bio" placeholder="Account bio/description..." maxlength="500">
+                                        <small class="text-muted">Optional account description</small>
+                                    </div>
+                                    
+                                    <!-- Engagement Metrics -->
+                                    <div class="col-sm-6 col-md-3">
                                         <label class="form-label">Followers</label>
-                                        <input type="number" class="form-control" name="followers_count" placeholder="1000" required>
+                                        <input type="number" class="form-control" name="followers_count" placeholder="1000" value="0" required>
+                                        <small class="text-muted">Number of followers</small>
                                     </div>
-                                    <div class="col-md-3">
+                                    <div class="col-sm-6 col-md-3">
                                         <label class="form-label">Following</label>
-                                        <input type="number" class="form-control" name="following_count" placeholder="500" required>
+                                        <input type="number" class="form-control" name="following_count" placeholder="500" value="0" required>
+                                        <small class="text-muted">Accounts being followed</small>
                                     </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">Posts Count</label>
-                                        <input type="number" class="form-control" name="posts_count" placeholder="100">
+                                    <div class="col-sm-6 col-md-3">
+                                        <label class="form-label">Posts</label>
+                                        <input type="number" class="form-control" name="posts_count" placeholder="100" value="0" required>
+                                        <small class="text-muted">Total posts count</small>
                                     </div>
-                                    <div class="col-md-4">
+                                    <div class="col-sm-6 col-md-3">
                                         <label class="form-label">Account Age (days)</label>
-                                        <input type="number" class="form-control" name="account_age_days" placeholder="365">
+                                        <input type="number" class="form-control" name="account_age_days" placeholder="365" value="365" required>
+                                        <small class="text-muted">How old is account</small>
                                     </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label">Profile Picture</label>
-                                        <select class="form-select" name="has_profile_pic">
-                                            <option value="true">Yes</option>
+                                    
+                                    <!-- Profile Features -->
+                                    <div class="col-sm-6">
+                                        <label class="form-label">Has Profile Picture</label>
+                                        <select class="form-select" name="has_profile_pic" required>
+                                            <option value="true" selected>Yes</option>
                                             <option value="false">No</option>
                                         </select>
+                                        <small class="text-muted">Profile image presence</small>
                                     </div>
-                                    <div class="col-12">
-                                        <label class="form-label">Bio</label>
-                                        <textarea class="form-control" name="bio" rows="2" placeholder="Account bio/description..."></textarea>
+                                    <div class="col-sm-6">
+                                        <label class="form-label">Account Verified</label>
+                                        <select class="form-select" name="is_verified">
+                                            <option value="false" selected>No</option>
+                                            <option value="true">Yes</option>
+                                        </select>
+                                        <small class="text-muted">Verification status</small>
+                                    </div>
+                                    
+                                    <!-- Engagement Features -->
+                                    <div class="col-sm-6 col-md-4">
+                                        <label class="form-label">Avg Likes/Post</label>
+                                        <input type="number" step="0.1" class="form-control" name="avg_likes_per_post" placeholder="0" value="0">
+                                        <small class="text-muted">Average likes per post</small>
+                                    </div>
+                                    <div class="col-sm-6 col-md-4">
+                                        <label class="form-label">Avg Comments/Post</label>
+                                        <input type="number" step="0.1" class="form-control" name="avg_comments_per_post" placeholder="0" value="0">
+                                        <small class="text-muted">Average comments per post</small>
+                                    </div>
+                                    <div class="col-sm-6 col-md-4">
+                                        <label class="form-label">Posting Regularity</label>
+                                        <input type="number" step="0.01" class="form-control" name="posting_regularity" placeholder="0-1" value="0.5" min="0" max="1">
+                                        <small class="text-muted">0 (irregular) to 1 (very regular)</small>
+                                    </div>
+                                    
+                                    <!-- Behavior Features -->
+                                    <div class="col-sm-6 col-md-4">
+                                        <label class="form-label">Session Duration (mins)</label>
+                                        <input type="number" step="0.1" class="form-control" name="session_duration_avg" placeholder="30" value="30">
+                                        <small class="text-muted">Average session duration</small>
+                                    </div>
+                                    <div class="col-sm-6 col-md-4">
+                                        <label class="form-label">Login Frequency</label>
+                                        <input type="number" step="0.1" class="form-control" name="login_frequency" placeholder="1" value="1">
+                                        <small class="text-muted">Times per day</small>
+                                    </div>
+                                    <div class="col-sm-6 col-md-4">
+                                        <label class="form-label">Burst Posting Score</label>
+                                        <input type="number" step="0.1" class="form-control" name="burst_posting_score" placeholder="0-1" value="0.2" min="0" max="1">
+                                        <small class="text-muted">0 (low) to 1 (high burst)</small>
+                                    </div>
+                                    
+                                    <!-- Content Features -->
+                                    <div class="col-sm-6">
+                                        <label class="form-label">Avg Caption Length</label>
+                                        <input type="number" class="form-control" name="avg_caption_length" placeholder="50" value="50">
+                                        <small class="text-muted">Average caption characters</small>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <label class="form-label">Hashtag Density</label>
+                                        <input type="number" step="0.01" class="form-control" name="hashtag_density" placeholder="0.1" value="0.1" min="0" max="1">
+                                        <small class="text-muted">0 to 1 (hashtag usage)</small>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <label class="form-label">Spam Words Count</label>
+                                        <input type="number" class="form-control" name="spam_word_count" placeholder="0" value="0">
+                                        <small class="text-muted">Number of spam words detected</small>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <label class="form-label">Duplicate Content Ratio</label>
+                                        <input type="number" step="0.01" class="form-control" name="duplicate_content_ratio" placeholder="0" value="0" min="0" max="1">
+                                        <small class="text-muted">0 (unique) to 1 (all duplicate)</small>
                                     </div>
                                 </div>
                                 
-                                <div class="d-flex gap-2 mt-4">
+                                <!-- Action Buttons -->
+                                <div class="d-flex gap-3 mt-5">
                                     <button type="submit" class="btn btn-primary btn-lg flex-grow-1">
                                         <i class="bi bi-cpu me-2"></i>Analyze Account
                                     </button>
-                                    <button type="button" class="btn btn-outline-secondary" onclick="loadSample()">
+                                    <button type="button" class="btn btn-outline-secondary btn-lg" onclick="loadSample()">
                                         <i class="bi bi-lightning me-1"></i>Load Sample
                                     </button>
                                 </div>

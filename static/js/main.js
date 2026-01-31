@@ -1,453 +1,342 @@
 /**
  * Fake Account Detection Dashboard - Main JavaScript
- * Handles UI interactions, API calls, and chart rendering
+ * Handles form submission, results display, and interactions
  */
 
-// ==================== Utility Functions ====================
+// Load sample accounts on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadSampleAccounts();
+    setupFormValidation();
+});
 
 /**
- * Format a number with commas for thousands
+ * Load sample accounts from API
  */
-function formatNumber(num) {
-    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-}
-
-/**
- * Format percentage value
- */
-function formatPercent(value, decimals = 1) {
-    return (value * 100).toFixed(decimals) + '%';
-}
-
-/**
- * Get risk level class based on score
- */
-function getRiskClass(score) {
-    if (score < 0.4) return 'success';
-    if (score < 0.7) return 'warning';
-    return 'danger';
-}
-
-/**
- * Get risk level text based on score
- */
-function getRiskLevel(score) {
-    if (score < 0.2) return 'Very Low';
-    if (score < 0.4) return 'Low';
-    if (score < 0.6) return 'Medium';
-    if (score < 0.8) return 'High';
-    return 'Very High';
-}
-
-/**
- * Show loading spinner
- */
-function showLoading(elementId) {
-    const el = document.getElementById(elementId);
-    if (el) {
-        el.innerHTML = `
-            <div class="text-center py-5">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Loading...</span>
-                </div>
-                <p class="mt-3 text-muted">Loading...</p>
-            </div>
-        `;
-    }
-}
-
-/**
- * Show error message
- */
-function showError(elementId, message) {
-    const el = document.getElementById(elementId);
-    if (el) {
-        el.innerHTML = `
-            <div class="alert alert-danger">
-                <i class="bi bi-exclamation-triangle me-2"></i>
-                ${message}
-            </div>
-        `;
-    }
-}
-
-/**
- * Debounce function for rate limiting
- */
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-}
-
-// ==================== API Functions ====================
-
-/**
- * Analyze a single account
- */
-async function analyzeAccount(accountData) {
+async function loadSampleAccounts() {
     try {
-        const response = await fetch('/api/analyze', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(accountData)
-        });
-        
+        const response = await fetch('/api/sample-accounts');
         const data = await response.json();
         
-        if (!data.success) {
-            throw new Error(data.error || 'Analysis failed');
+        if (data.success) {
+            const container = document.getElementById('sampleAccountsContainer');
+            container.innerHTML = '';
+            
+            data.samples.forEach((sample, index) => {
+                const col = document.createElement('div');
+                col.className = 'col-md-6 col-lg-3';
+                col.innerHTML = `
+                    <div class="card h-100 sample-card" onclick="loadSampleToForm(${index})" style="cursor: pointer;">
+                        <div class="card-body">
+                            <h6 class="card-title">@${sample.username}</h6>
+                            <p class="card-text small text-muted">
+                                <i class="bi bi-people me-1"></i>${sample.followers_count.toLocaleString()} followers<br>
+                                <i class="bi bi-image me-1"></i>${sample.posts_count} posts
+                            </p>
+                            <span class="badge ${sample.has_profile_pic ? 'bg-success' : 'bg-secondary'}">
+                                ${sample.has_profile_pic ? 'Has Profile Pic' : 'No Profile Pic'}
+                            </span>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(col);
+            });
+            
+            window.sampleAccounts = data.samples;
         }
-        
-        return data.result;
     } catch (error) {
-        console.error('Error analyzing account:', error);
-        throw error;
+        console.error('Error loading samples:', error);
     }
 }
 
 /**
- * Analyze batch of accounts from CSV
+ * Setup form validation and submission
  */
-async function analyzeBatch(formData) {
+function setupFormValidation() {
+    const form = document.getElementById('quickAnalysisForm');
+    if (form) {
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            await handleAnalysisFormSubmit(this);
+        });
+    }
+}
+
+/**
+ * Handle the quick analysis form submission
+ */
+async function handleAnalysisFormSubmit(form) {
+    // Validate form
+    if (!form.checkValidity()) {
+        form.classList.add('was-validated');
+        return;
+    }
+
+    const formData = new FormData(form);
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalButtonText = submitBtn.innerHTML;
+    
+    // Disable button and show loading
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Analyzing...';
+    
     try {
-        const response = await fetch('/api/analyze-batch', {
+        const response = await fetch('/api/analyze', {
             method: 'POST',
             body: formData
         });
         
         const data = await response.json();
         
-        if (!data.success) {
-            throw new Error(data.error || 'Batch analysis failed');
+        if (data.success) {
+            displayResults(data.result);
+            showSuccessNotification('Analysis completed successfully!');
+        } else {
+            showErrorNotification('Error: ' + (data.error || 'Unknown error occurred'));
         }
-        
-        return data;
     } catch (error) {
-        console.error('Error analyzing batch:', error);
-        throw error;
+        console.error('Error:', error);
+        showErrorNotification('Error analyzing account: ' + error.message);
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalButtonText;
     }
 }
 
 /**
- * Get sample accounts
+ * Display analysis results
  */
-async function getSampleAccounts() {
-    try {
-        const response = await fetch('/api/sample-accounts');
-        const data = await response.json();
-        
-        if (!data.success) {
-            throw new Error(data.error || 'Failed to load samples');
-        }
-        
-        return data.samples;
-    } catch (error) {
-        console.error('Error loading samples:', error);
-        throw error;
+function displayResults(result) {
+    const resultsSection = document.getElementById('resultsSection');
+    
+    // Update risk score
+    const riskPercent = Math.round(result.risk_score * 100);
+    document.getElementById('riskScoreValue').textContent = riskPercent + '%';
+    document.getElementById('riskLevelText').textContent = result.risk_level + ' Risk';
+    document.getElementById('confidenceValue').textContent = Math.round(result.confidence * 100) + '%';
+    
+    // Update risk card styling
+    const riskCard = document.getElementById('riskScoreCard');
+    riskCard.className = 'text-center p-4 rounded-3 mb-3';
+    
+    if (result.risk_score < 0.4) {
+        riskCard.classList.add('bg-success-subtle', 'text-success');
+    } else if (result.risk_score < 0.7) {
+        riskCard.classList.add('bg-warning-subtle', 'text-warning');
+    } else {
+        riskCard.classList.add('bg-danger-subtle', 'text-danger');
     }
-}
-
-/**
- * Get model metrics
- */
-async function getModelMetrics() {
-    try {
-        const response = await fetch('/api/model-metrics');
-        const data = await response.json();
-        
-        if (!data.success) {
-            throw new Error(data.error || 'Failed to load metrics');
-        }
-        
-        return data;
-    } catch (error) {
-        console.error('Error loading metrics:', error);
-        throw error;
-    }
-}
-
-/**
- * Export results to CSV
- */
-async function exportResultsToCSV(results) {
-    try {
-        const response = await fetch('/api/export-report', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ results })
+    
+    // Update classification badge
+    const badge = document.getElementById('classificationBadge');
+    badge.textContent = result.classification;
+    badge.className = 'badge fs-6 ' + (result.is_fake ? 'bg-danger' : 'bg-success');
+    
+    // Update summary
+    document.getElementById('summaryText').textContent = result.explanation.summary;
+    
+    // Update suspicious factors
+    const suspiciousList = document.getElementById('suspiciousFactors');
+    suspiciousList.innerHTML = '';
+    if (result.suspicious_attributes && result.suspicious_attributes.length > 0) {
+        result.suspicious_attributes.forEach(factor => {
+            const li = document.createElement('li');
+            li.className = 'mb-2 p-2 rounded bg-light';
+            li.innerHTML = `
+                <strong class="text-danger"><i class="bi bi-exclamation-circle me-1"></i>${factor.factor}</strong>
+                <br>
+                <span class="text-muted">${factor.detail}</span>
+            `;
+            suspiciousList.appendChild(li);
         });
+    } else {
+        suspiciousList.innerHTML = '<li class="text-muted">No suspicious factors detected</li>';
+    }
+    
+    // Update positive factors
+    const positiveList = document.getElementById('positiveFactors');
+    positiveList.innerHTML = '';
+    if (result.positive_attributes && result.positive_attributes.length > 0) {
+        result.positive_attributes.forEach(factor => {
+            const li = document.createElement('li');
+            li.className = 'mb-2 p-2 rounded bg-light';
+            li.innerHTML = `
+                <strong class="text-success"><i class="bi bi-check-circle me-1"></i>${factor.factor}</strong>
+                <br>
+                <span class="text-muted">${factor.detail}</span>
+            `;
+            positiveList.appendChild(li);
+        });
+    } else {
+        positiveList.innerHTML = '<li class="text-muted">No positive factors identified</li>';
+    }
+    
+    // Render charts if available
+    if (result.charts) {
+        try {
+            if (result.charts.engagement) {
+                const engagementData = JSON.parse(result.charts.engagement);
+                Plotly.newPlot('engagementChart', engagementData.data, engagementData.layout, {
+                    responsive: true,
+                    displayModeBar: false
+                });
+            }
+        } catch (e) {
+            console.error('Error rendering engagement chart:', e);
+        }
+        
+        try {
+            if (result.charts.followers) {
+                const followersData = JSON.parse(result.charts.followers);
+                Plotly.newPlot('followersChart', followersData.data, followersData.layout, {
+                    responsive: true,
+                    displayModeBar: false
+                });
+            }
+        } catch (e) {
+            console.error('Error rendering followers chart:', e);
+        }
+    }
+    
+    // Show results section
+    resultsSection.style.display = 'block';
+    
+    // Scroll to results
+    setTimeout(() => {
+        resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+}
+
+/**
+ * Load sample account data into the form
+ */
+function loadSampleToForm(index) {
+    if (!window.sampleAccounts || !window.sampleAccounts[index]) {
+        showErrorNotification('Sample account not found');
+        return;
+    }
+    
+    const sample = window.sampleAccounts[index];
+    const form = document.getElementById('quickAnalysisForm');
+    
+    // Populate form fields
+    form.querySelector('input[name="username"]').value = sample.username;
+    form.querySelector('input[name="followers_count"]').value = sample.followers_count;
+    form.querySelector('input[name="following_count"]').value = sample.following_count;
+    form.querySelector('input[name="posts_count"]').value = sample.posts_count;
+    form.querySelector('input[name="account_age_days"]').value = sample.account_age_days;
+    form.querySelector('select[name="has_profile_pic"]').value = sample.has_profile_pic ? 'true' : 'false';
+    form.querySelector('textarea[name="bio"]').value = sample.bio || '';
+    
+    // Scroll to form
+    form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    showSuccessNotification('Sample account loaded!');
+}
+
+/**
+ * Load a random sample account
+ */
+function loadSample() {
+    if (!window.sampleAccounts || window.sampleAccounts.length === 0) {
+        showErrorNotification('No sample accounts available');
+        return;
+    }
+    
+    const randomIndex = Math.floor(Math.random() * window.sampleAccounts.length);
+    loadSampleToForm(randomIndex);
+}
+
+/**
+ * Show success notification
+ */
+function showSuccessNotification(message) {
+    showNotification(message, 'success');
+}
+
+/**
+ * Show error notification
+ */
+function showErrorNotification(message) {
+    showNotification(message, 'danger');
+}
+
+/**
+ * Show generic notification
+ */
+function showNotification(message, type = 'info') {
+    const notificationHtml = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert" style="position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 300px; box-shadow: 0 4px 15px rgba(0,0,0,0.2);">
+            <i class="bi bi-${type === 'success' ? 'check-circle' : type === 'danger' ? 'exclamation-circle' : 'info-circle'} me-2"></i>
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    `;
+    
+    const container = document.createElement('div');
+    container.innerHTML = notificationHtml;
+    document.body.appendChild(container);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        const alert = container.querySelector('.alert');
+        if (alert) {
+            alert.remove();
+        }
+        container.remove();
+    }, 5000);
+}
+
+/**
+ * Export results as CSV
+ */
+async function exportResults() {
+    try {
+        const response = await fetch('/api/export-results', {
+            method: 'POST'
+        });
+        
+        if (!response.ok) {
+            throw new Error('Export failed');
+        }
         
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `fake_account_report_${new Date().toISOString().slice(0, 10)}.csv`;
+        a.download = `analysis_results_${new Date().getTime()}.csv`;
         document.body.appendChild(a);
         a.click();
-        document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
+        a.remove();
         
-        return true;
+        showSuccessNotification('Results exported successfully!');
     } catch (error) {
-        console.error('Error exporting results:', error);
-        throw error;
-    }
-}
-
-// ==================== Chart Functions ====================
-
-/**
- * Render a Plotly chart from JSON data
- */
-function renderChart(elementId, chartJson, options = {}) {
-    try {
-        const chartData = typeof chartJson === 'string' ? JSON.parse(chartJson) : chartJson;
-        const config = {
-            responsive: true,
-            displayModeBar: options.showModeBar !== false,
-            ...options
-        };
-        
-        Plotly.newPlot(elementId, chartData.data, chartData.layout, config);
-    } catch (error) {
-        console.error(`Error rendering chart ${elementId}:`, error);
+        showErrorNotification('Error exporting results: ' + error.message);
     }
 }
 
 /**
- * Create a simple gauge chart
+ * Clear form fields
  */
-function createGaugeChart(elementId, value, title = 'Risk Score') {
-    const data = [{
-        type: 'indicator',
-        mode: 'gauge+number',
-        value: value * 100,
-        title: { text: title, font: { size: 16 } },
-        gauge: {
-            axis: { range: [0, 100], tickwidth: 1 },
-            bar: { color: value < 0.4 ? '#28a745' : value < 0.7 ? '#ffc107' : '#dc3545' },
-            steps: [
-                { range: [0, 40], color: 'rgba(40, 167, 69, 0.2)' },
-                { range: [40, 70], color: 'rgba(255, 193, 7, 0.2)' },
-                { range: [70, 100], color: 'rgba(220, 53, 69, 0.2)' }
-            ],
-            threshold: {
-                line: { color: 'black', width: 2 },
-                thickness: 0.75,
-                value: 50
-            }
-        }
-    }];
-    
-    const layout = {
-        margin: { t: 40, r: 25, l: 25, b: 25 },
-        paper_bgcolor: 'transparent',
-        font: { family: 'Segoe UI, system-ui, sans-serif' }
-    };
-    
-    Plotly.newPlot(elementId, data, layout, { responsive: true, displayModeBar: false });
-}
-
-// ==================== UI Helper Functions ====================
-
-/**
- * Create a factor list item
- */
-function createFactorItem(factor, type = 'suspicious') {
-    const weightClass = factor.weight === 'high' 
-        ? (type === 'suspicious' ? 'danger' : 'success')
-        : factor.weight === 'medium' 
-            ? (type === 'suspicious' ? 'warning' : 'info')
-            : 'secondary';
-    
-    return `
-        <li class="mb-3">
-            <div class="d-flex align-items-start">
-                <span class="badge bg-${weightClass} me-2">${factor.weight}</span>
-                <div>
-                    <strong>${factor.factor}</strong>
-                    <br><small class="text-muted">${factor.detail}</small>
-                </div>
-            </div>
-        </li>
-    `;
-}
-
-/**
- * Create a result table row
- */
-function createResultRow(result, index) {
-    const riskPercent = Math.round(result.risk_score * 100);
-    const riskClass = getRiskClass(result.risk_score);
-    
-    return `
-        <tr data-index="${index}" 
-            data-classification="${result.is_fake ? 'fake' : 'genuine'}"
-            data-risk-level="${result.risk_score < 0.4 ? 'low' : result.risk_score < 0.7 ? 'medium' : 'high'}">
-            <td><strong>@${escapeHtml(result.username)}</strong></td>
-            <td>
-                <div class="progress" style="height: 20px; min-width: 100px;">
-                    <div class="progress-bar bg-${riskClass}" style="width: ${riskPercent}%">
-                        ${riskPercent}%
-                    </div>
-                </div>
-            </td>
-            <td>
-                <span class="badge bg-${result.is_fake ? 'danger' : 'success'}">
-                    ${result.is_fake ? 'Fake/Bot' : 'Genuine'}
-                </span>
-            </td>
-            <td>${Math.round(result.confidence * 100)}%</td>
-            <td>
-                <span class="badge bg-secondary">${result.suspicious_attributes.length} factors</span>
-            </td>
-            <td>
-                <button class="btn btn-sm btn-outline-primary" onclick="showAccountDetail(${index})">
-                    <i class="bi bi-eye"></i>
-                </button>
-            </td>
-        </tr>
-    `;
-}
-
-/**
- * Escape HTML to prevent XSS
- */
-function escapeHtml(text) {
-    const map = {
-        '&': '&amp;',
-        '<': '&lt;',
-        '>': '&gt;',
-        '"': '&quot;',
-        "'": '&#039;'
-    };
-    return text.replace(/[&<>"']/g, m => map[m]);
-}
-
-/**
- * Show toast notification
- */
-function showToast(message, type = 'info') {
-    // Create toast container if it doesn't exist
-    let container = document.getElementById('toastContainer');
-    if (!container) {
-        container = document.createElement('div');
-        container.id = 'toastContainer';
-        container.className = 'toast-container position-fixed bottom-0 end-0 p-3';
-        container.style.zIndex = '1100';
-        document.body.appendChild(container);
+function clearForm() {
+    const form = document.getElementById('quickAnalysisForm');
+    if (form) {
+        form.reset();
+        form.classList.remove('was-validated');
+        document.getElementById('resultsSection').style.display = 'none';
+        showSuccessNotification('Form cleared');
     }
-    
-    const toastId = 'toast-' + Date.now();
-    const toast = document.createElement('div');
-    toast.id = toastId;
-    toast.className = `toast align-items-center text-white bg-${type} border-0`;
-    toast.setAttribute('role', 'alert');
-    toast.innerHTML = `
-        <div class="d-flex">
-            <div class="toast-body">${message}</div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-        </div>
-    `;
-    
-    container.appendChild(toast);
-    
-    const bsToast = new bootstrap.Toast(toast, { delay: 3000 });
-    bsToast.show();
-    
-    toast.addEventListener('hidden.bs.toast', () => toast.remove());
 }
-
-// ==================== Form Validation ====================
 
 /**
- * Validate account form data
+ * Format large numbers with commas
  */
-function validateAccountForm(formData) {
-    const errors = [];
-    
-    const followers = parseInt(formData.get('followers_count'));
-    const following = parseInt(formData.get('following_count'));
-    
-    if (isNaN(followers) || followers < 0) {
-        errors.push('Followers count must be a non-negative number');
-    }
-    
-    if (isNaN(following) || following < 0) {
-        errors.push('Following count must be a non-negative number');
-    }
-    
-    const username = formData.get('username');
-    if (!username || username.trim() === '') {
-        errors.push('Username is required');
-    }
-    
-    return errors;
+function formatNumber(num) {
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
-// ==================== Event Listeners ====================
-
-// Initialize tooltips and popovers when DOM is loaded
-document.addEventListener('DOMContentLoaded', function() {
-    // Initialize Bootstrap tooltips
-    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    tooltipTriggerList.map(function(tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
-    
-    // Initialize Bootstrap popovers
-    const popoverTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="popover"]'));
-    popoverTriggerList.map(function(popoverTriggerEl) {
-        return new bootstrap.Popover(popoverTriggerEl);
-    });
-    
-    // Add smooth scroll behavior
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener('click', function(e) {
-            e.preventDefault();
-            const target = document.querySelector(this.getAttribute('href'));
-            if (target) {
-                target.scrollIntoView({ behavior: 'smooth' });
-            }
-        });
-    });
-});
-
-// Handle window resize for charts
-window.addEventListener('resize', debounce(function() {
-    // Resize all Plotly charts
-    document.querySelectorAll('[id$="Chart"]').forEach(chart => {
-        if (chart.data) {
-            Plotly.Plots.resize(chart);
-        }
-    });
-}, 250));
-
-// Export functions for global use
-window.FakeDetector = {
-    analyzeAccount,
-    analyzeBatch,
-    getSampleAccounts,
-    getModelMetrics,
-    exportResultsToCSV,
-    renderChart,
-    createGaugeChart,
-    formatNumber,
-    formatPercent,
-    getRiskClass,
-    getRiskLevel,
-    showToast,
-    showLoading,
-    showError
-};
+/**
+ * Format percentage
+ */
+function formatPercentage(value) {
+    return (value * 100).toFixed(1) + '%';
+}
